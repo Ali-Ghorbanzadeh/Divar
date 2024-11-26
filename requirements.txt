@@ -4,3 +4,5 @@ pillow
 psycopg2-binary
 python-dotenv
 drf-spectacular
+django-jazzmin
+redis

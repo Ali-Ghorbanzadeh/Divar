@@ -1,4 +1,5 @@
 from django.db import models
+from .managers import LogicalManager
 
 
 class TimeStampMixin(models.Model):
@@ -11,6 +12,9 @@ class TimeStampMixin(models.Model):
 
 class LogicalDeleteMixin(models.Model):
     is_deleted = models.BooleanField(default=False)
+
+    objects = LogicalManager()
+    archives = models.Manager()
 
     def delete(self, using=None, keep_parents=False):
         if not self.is_deleted:

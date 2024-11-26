@@ -1,15 +1,14 @@
 from django.db import models
-from django.utils import timezone
 from apps.core.models import TimeStampMixin
 from django.contrib.auth.models import AbstractUser
-
+from apps.advertisement.models import ProvinceOrCity
 
 class UserProfile(AbstractUser):
     phone_number = models.CharField(max_length=11, unique=True, null=True, blank=True)
-    book_mark = models.ForeignKey('advertisement.Ad',on_delete=models.CASCADE,
-                                  null=True, blank=True, related_name='favorite_ad')
+    book_mark = models.JSONField(null=True, blank=True)
     national_code = models.CharField(max_length=10, unique=True)
     birthday = models.DateField(null=True, blank=True)
+    location = models.ForeignKey(ProvinceOrCity, null=True, blank=True, on_delete=models.SET_NULL)
     connection_type = models.CharField(default='chat_only')
     premium = models.BooleanField(default=False)
 
