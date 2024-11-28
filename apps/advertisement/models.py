@@ -5,7 +5,7 @@ from config.settings import AUTH_USER_MODEL
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from apps.core.models import TimeStampMixin, LogicalDeleteMixin
-from time import time
+from django.contrib.postgres.fields import ArrayField
 
 
 class Category(TimeStampMixin, LogicalDeleteMixin):
@@ -59,10 +59,11 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
     expire = models.DateTimeField(default=(timezone.now() + timedelta(days=30)))
     connection_type = models.CharField(choices=TYPE_CHOICES, null=True, blank=True)
     premium = models.BooleanField(default=False)
-    details = models.JSONField(null=True, blank=True)
-    views = models.JSONField(null=True, blank=True)
+    details = models.JSONField(default=dict, null=True, blank=True)
+    views = models.JSONField(default=dict, null=True, blank=True)
     max_count_view = models.PositiveIntegerField(default=0)
     status = models.CharField(choices=STATUS_CHOICES, default='pending')
+    viewed_users = ArrayField(models.CharField(max_length=255), default=list)
 
     @property
     def images(self):
@@ -71,13 +72,6 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
     @property
     def time_to_add(self):
         return int((timezone.now() - self.created_at).total_seconds())
-
-    @property
-    def count_views(self):
-        if self.views:
-            self.max_count_view = sum(self.views.values()) # NOQA
-            self.save()
-        return self.max_count_view
 
     @property
     def is_expire(self):
@@ -99,8 +93,8 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
             free_ads = cls.objects.filter().order_by('-created_at')
         if not all((premium_ads, free_ads)):
             return cls.get_ads()
-        max_view = max([ad.count_views for ad in premium_ads])
-        premiums = premium_ads.filter(max_count_view__lt=max_view + 1).order_by('max_count_view')[:3]
+        max_view = max([ad.max_count_view for ad in premium_ads])
+        premiums = premium_ads.filter(max_count_view__lte=max_view).order_by('max_count_view')[:3]
         all_ads = [*premiums, *free_ads.exclude(id__in=premiums.values('id'))]
         return all_ads
 
@@ -108,7 +102,7 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
         return self.title
 
 
-class Image(TimeStampMixin, LogicalDeleteMixin):
+class Image(TimeStampMixin):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name='images')
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
@@ -122,7 +116,7 @@ class Image(TimeStampMixin, LogicalDeleteMixin):
         return self.src.url
 
 
-class Video(TimeStampMixin, LogicalDeleteMixin):
+class Video(TimeStampMixin):
     advertise = models.ForeignKey(Ad, on_delete=models.CASCADE, related_name='videos')
     src = models.FileField(upload_to='videos/')
 

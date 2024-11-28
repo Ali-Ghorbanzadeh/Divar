@@ -39,7 +39,7 @@ class ListAdAPIView(GenericAPIView):
 
 
 class CreateUpdateDeleteRetrieveAdAPIView(RetrieveAPIView, DestroyAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Ad.objects.all()
     serializer_class = CreateUpdateRetrieveDeleteAdSerializer
 

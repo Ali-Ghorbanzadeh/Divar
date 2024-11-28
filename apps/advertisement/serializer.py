@@ -67,7 +67,7 @@ class CreateUpdateRetrieveDeleteAdSerializer(ModelSerializer):
                   'status',
                   'details',
                   'phone_number',
-                  'count_views',
+                  'max_count_view',
                   'time_to_add']
 
         extra_kwarg = {
