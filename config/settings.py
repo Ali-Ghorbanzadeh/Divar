@@ -1,18 +1,17 @@
 from pathlib import Path
-from dotenv import load_dotenv
-import os
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / 'env.')
 
-SECRET_KEY = os.getenv('SECRET_KEY')
 
-DEBUG = True
+SECRET_KEY = config("SECRET_KEY", default="&(dj-development-secret_key)$")
 
-ALLOWED_HOSTS = []
+DEBUG = config("DEBUG", cast=bool, default=True)
+
+ALLOWED_HOSTS = ["*"] if DEBUG else config("ALLOWED_HOSTS", cast=lambda hosts: hosts.split(','))
 APPLICATIONS = ['core', 'advertisement', 'accounts']
-
+DEFAULT_FROM_EMAIL = config("EMAIL_DEFAULT_FROM", default="noreply@development.dev")
 INSTALLED_APPS = [
 
     'jazzmin',
@@ -63,20 +62,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'divar1234',
-        'PORT': 5432,
-        'HOST': "0.0.0.0"
-    },
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': BASE_DIR / 'db.sqlite3',
-    # }
-}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -95,7 +80,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = config("TIME_ZONE", default="Asia/Tehran")
 
 USE_I18N = True
 
@@ -106,11 +91,92 @@ STATIC_URL = 'static/'
 STATIC_ROOT_PATH = BASE_DIR / "storage/static"
 
 if DEBUG:
+    # Static
     STATICFILES_DIRS = [
         STATIC_ROOT_PATH,
     ]
+
+    # Email
+    EMAIL_HOST = "localhost"
+    EMAIL_PORT = 2525
+    EMAIL_HOST_USER = ""
+    EMAIL_HOST_PASSWORD = ""
+    EMAIL_USE_TLS = False
+
+    # Database
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': config("DB_NAME"),
+            'USER': config("DB_USER"),
+            'PASSWORD': config("DB_PASSWORD"),
+            'PORT': config("DB_PORT"),
+            'HOST': config("DB_HOST"),
+        }
+    }
+
+    # Cache
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://localhost:6379/",
+        }
+    }
+
+    CORS_ALLOW_ALL_ORIGINS = True
 else:
+    # Statics
     STATIC_ROOT = STATIC_ROOT_PATH
+
+    # Email
+    EMAIL_HOST = config("EMAIL_HOST")
+    EMAIL_PORT = config("EMAIL_PORT", cast=int)
+    EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+    EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
+
+    # Database
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config("DB_NAME"),
+            'USER': config("DB_USER"),
+            'PASSWORD': config("DB_PASSWORD"),
+            'PORT': config("DB_PORT"),
+            'HOST': config("DB_HOST"),
+        }
+    }
+
+    # Cache
+    REDIS_URL = config("REDIS_URL")
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+    }
+
+    # Security params:
+    SECURE_HSTS_SECONDS = 12 * 30 * 24 * 60 * 60
+    SECURE_HSTS_PRELOAD = True
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = "HTTP_X_FORWARDED_PROTO" ,"https"
+    USE_X_FORWARDED_HOST = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_REFERRER_POLICY = "strict-origin"
+    X_FRAME_OPTIONS = "SAMEORIGIN"
+    SESSION_COOKIE_AGE = 3 * 60 * 60
+    SESSION_TIMEOUT = 24 * 60 * 60
+
+    # CORS params
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = config(
+        "ALLOWED_HOSTS",
+        cast=lambda hosts: hosts.split(','),
+        default="http://0.0.0.0:8000, http://localhost:8000"
+    )
 
 
 MEDIA_URL = 'media/'
@@ -123,6 +189,7 @@ AUTH_USER_MODEL = 'accounts.UserProfile'
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
 JAZZMIN_SETTINGS = {
     "site_title": "Divar",
     "site_header": "Divar",
@@ -204,10 +271,3 @@ JAZZMIN_UI_TWEAKS = {
     "actions_sticky_top": False
 }
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://localhost:6379/",
-        "KEY_PREFIX": "imdb",
-    }
-}

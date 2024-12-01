@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.utils import timezone
 from config.settings import AUTH_USER_MODEL
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from apps.core.models import TimeStampMixin, LogicalDeleteMixin
 from django.contrib.postgres.fields import ArrayField
 
@@ -12,10 +12,7 @@ class Category(TimeStampMixin, LogicalDeleteMixin):
     title = models.CharField(max_length=255, unique=True)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='childes', null=True, blank=True)
     premium = models.BooleanField(default=False)
-
-    @property
-    def images(self):
-        return Image.objects.filter(object_id=self.id, content_type__model='category').values('src')
+    images = GenericRelation('Image')
 
     def __str__(self):
         return self.title
@@ -61,13 +58,10 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
     premium = models.BooleanField(default=False)
     details = models.JSONField(default=dict, null=True, blank=True)
     views = models.JSONField(default=dict, null=True, blank=True)
-    max_count_view = models.PositiveIntegerField(default=0)
+    total_count_view = models.PositiveIntegerField(default=0)
     status = models.CharField(choices=STATUS_CHOICES, default='pending')
     viewed_users = ArrayField(models.CharField(max_length=255), default=list)
-
-    @property
-    def images(self):
-        return Image.objects.filter(object_id=self.id, content_type__model='ad').values('src')
+    images = GenericRelation('Image')
 
     @property
     def time_to_add(self):
@@ -75,7 +69,11 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
 
     @property
     def is_expire(self):
-        return (timezone.now() - self.expire).total_seconds() > 0
+        if (timezone.now() - self.expire).total_seconds() > 0:
+            self.is_deleted = True
+            self.save()
+            return True
+
 
     @property
     def phone_number(self):
@@ -93,8 +91,8 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
             free_ads = cls.objects.filter().order_by('-created_at')
         if not all((premium_ads, free_ads)):
             return cls.get_ads()
-        max_view = max([ad.max_count_view for ad in premium_ads])
-        premiums = premium_ads.filter(max_count_view__lte=max_view).order_by('max_count_view')[:3]
+        max_view = max([ad.total_count_view for ad in premium_ads])
+        premiums = premium_ads.filter(total_count_view__lte=max_view).order_by('total_count_view')[:3]
         all_ads = [*premiums, *free_ads.exclude(id__in=premiums.values('id'))]
         return all_ads
 
@@ -107,10 +105,6 @@ class Image(TimeStampMixin):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
     src = models.ImageField(upload_to='images/')
-
-    def delete(self, using=None, keep_parents=False):
-        # delete file # TODO
-        return super().delete(using, keep_parents)
 
     def __str__(self):
         return self.src.url

@@ -6,3 +6,4 @@ python-dotenv
 drf-spectacular
 django-jazzmin
 redis
+python-decouple

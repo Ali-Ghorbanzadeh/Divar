@@ -35,6 +35,7 @@ class ListAdAPIView(GenericAPIView):
             all_objects = Ad.get_ads()
 
         serializers = self.get_serializer(all_objects, many=True)
+        print(serializers.data)
         return Response(serializers.data, status=status.HTTP_200_OK)
 
 
@@ -53,6 +54,9 @@ class CreateUpdateDeleteRetrieveAdAPIView(RetrieveAPIView, DestroyAPIView):
         except ValidationError:
             return Response({'message': 'درخواست نامعتبر!'},status=status.HTTP_400_BAD_REQUEST)
 
+        except AssertionError as e:
+            return Response({'message': e}, status=status.HTTP_400_BAD_REQUEST)
+
     def patch(self, request, *args, **kwargs):
         advertisement = get_object_or_404(Ad, pk=request.data.get('pk'))
         serializer = self.get_serializer(advertisement, data=request.data, partial=True, context={'request': request})
@@ -62,7 +66,10 @@ class CreateUpdateDeleteRetrieveAdAPIView(RetrieveAPIView, DestroyAPIView):
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
         except ValidationError:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'درخواست نامعتبر!'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except AssertionError as e:
+            return Response({'message': e}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_destroy(self, instance):
         instance.save(force_update='updated_at')
