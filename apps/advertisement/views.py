@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
-
+from rest_framework.pagination import LimitOffsetPagination
 
 @method_decorator(cache_page(30), name='get')
 class CategoryAPIView(ListAPIView, RetrieveAPIView):
@@ -26,17 +26,28 @@ class CategoryAPIView(ListAPIView, RetrieveAPIView):
 class ListAdAPIView(GenericAPIView):
     queryset = Ad.objects.all()
     serializer_class = ListAdSerializer
+    pagination_class = LimitOffsetPagination
 
     def get(self, request, *args, **kwargs):
-        if title := kwargs.get('title'):
-            all_objects = Ad.get_ads(title)
+        category_title = kwargs.get('title')
+        city = kwargs.get('city')
+        if category_title and city:
+            all_objects = Ad.get_ads(category__title=category_title, address__name=city)
+
+        elif category_title:
+            all_objects = Ad.get_ads(category__title=category_title)
+
+        elif city:
+            all_objects = Ad.get_ads(address__name=city)
 
         else:
             all_objects = Ad.get_ads()
 
-        serializers = self.get_serializer(all_objects, many=True)
-        print(serializers.data)
-        return Response(serializers.data, status=status.HTTP_200_OK)
+        paginator = self.pagination_class()
+        paginated_queryset = paginator.paginate_queryset(all_objects, request)
+
+        serializers = self.get_serializer(paginated_queryset, many=True)
+        return paginator.get_paginated_response(serializers.data)
 
 
 class CreateUpdateDeleteRetrieveAdAPIView(RetrieveAPIView, DestroyAPIView):
@@ -75,4 +86,33 @@ class CreateUpdateDeleteRetrieveAdAPIView(RetrieveAPIView, DestroyAPIView):
         instance.save(force_update='updated_at')
         super().perform_destroy(instance)
 
+
+class SearchAdAPIView(GenericAPIView):
+    queryset = Ad.objects.all()
+    serializer_class = ListAdSerializer
+    pagination_class = LimitOffsetPagination
+
+    def post(self, request, *args, **kwargs):
+        text = kwargs.get('text')
+        category_title = request.data.get('category_title')
+        city = request.data.get('city')
+        order_by = request.data.get('order_by', '-created_at')
+
+        if category_title and city:
+            all_objects = Ad.get_ads(category__title=category_title, address__name=city, title__regex=text, order_by=order_by)
+
+        elif category_title:
+            all_objects = Ad.get_ads(category__title=category_title, title__regex=text, order_by=order_by)
+
+        elif city:
+            all_objects = Ad.get_ads(address__name=city, title__regex=text, order_by=order_by)
+
+        else:
+            all_objects = Ad.get_ads(title__regex=text, order_by=order_by)
+
+        paginator = self.pagination_class()
+        paginated_queryset = paginator.paginate_queryset(all_objects, request)
+
+        serializers = self.get_serializer(paginated_queryset, many=True)
+        return paginator.get_paginated_response(serializers.data)
 

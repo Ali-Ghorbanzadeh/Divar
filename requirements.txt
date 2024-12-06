@@ -7,3 +7,5 @@ drf-spectacular
 django-jazzmin
 redis
 python-decouple
+celery
+django_celery_beat

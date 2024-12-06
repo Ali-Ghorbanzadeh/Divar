@@ -6,6 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from apps.core.models import TimeStampMixin, LogicalDeleteMixin
 from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
 
 
 class Category(TimeStampMixin, LogicalDeleteMixin):
@@ -67,13 +68,6 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
     def time_to_add(self):
         return int((timezone.now() - self.created_at).total_seconds())
 
-    @property
-    def is_expire(self):
-        if (timezone.now() - self.expire).total_seconds() > 0:
-            self.is_deleted = True
-            self.save()
-            return True
-
 
     @property
     def phone_number(self):
@@ -82,18 +76,29 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
         return self.user.phone_number
 
     @classmethod
-    def get_ads(cls, category_title=None):
-        if category_title:
-            premium_ads = cls.objects.filter(premium=True, category__title=category_title)
-            free_ads = cls.objects.filter(category__title=category_title).order_by('-created_at')
-        else:
-            premium_ads = cls.objects.filter(premium=True)
-            free_ads = cls.objects.filter().order_by('-created_at')
-        if not all((premium_ads, free_ads)):
+    def get_ads(cls, order_by='-created_at', **kwargs):
+        key = list(kwargs.values())
+        key.append(order_by)
+        key = '>'.join(key)
+
+        if data := cache.get(key):
+            return data
+
+        premium_ads = cls.objects.filter(premium=True, **kwargs)
+        free_ads = cls.objects.filter(**kwargs).order_by(order_by)
+
+        if not free_ads:
             return cls.get_ads()
-        max_view = max([ad.total_count_view for ad in premium_ads])
+
+        max_view = 0
+
+        if premium_ads:
+            max_view = max([ad.total_count_view for ad in premium_ads])
+
         premiums = premium_ads.filter(total_count_view__lte=max_view).order_by('total_count_view')[:3]
+
         all_ads = [*premiums, *free_ads.exclude(id__in=premiums.values('id'))]
+        cache.set(key=key, value=all_ads, timeout=30)
         return all_ads
 
     def __str__(self):

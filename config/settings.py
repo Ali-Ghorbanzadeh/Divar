@@ -119,7 +119,7 @@ if DEBUG:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": "redis://localhost:6379/",
+            "LOCATION": "redis://localhost:6379/0",
         }
     }
 
@@ -156,27 +156,27 @@ else:
         }
     }
 
-    # Security params:
-    SECURE_HSTS_SECONDS = 12 * 30 * 24 * 60 * 60
-    SECURE_HSTS_PRELOAD = True
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = "HTTP_X_FORWARDED_PROTO" ,"https"
-    USE_X_FORWARDED_HOST = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_REFERRER_POLICY = "strict-origin"
-    X_FRAME_OPTIONS = "SAMEORIGIN"
-    SESSION_COOKIE_AGE = 3 * 60 * 60
-    SESSION_TIMEOUT = 24 * 60 * 60
+    # # Security params:
+    # SECURE_HSTS_SECONDS = 12 * 30 * 24 * 60 * 60
+    # SECURE_HSTS_PRELOAD = True
+    # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # SECURE_SSL_REDIRECT = True
+    # SECURE_PROXY_SSL_HEADER = "HTTP_X_FORWARDED_PROTO" ,"https"
+    # USE_X_FORWARDED_HOST = True
+    # SESSION_COOKIE_SECURE = True
+    # CSRF_COOKIE_SECURE = True
+    # SECURE_REFERRER_POLICY = "strict-origin"
+    # X_FRAME_OPTIONS = "SAMEORIGIN"
+    # SESSION_COOKIE_AGE = 3 * 60 * 60
+    # SESSION_TIMEOUT = 24 * 60 * 60
 
     # CORS params
-    CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOWED_ORIGINS = config(
-        "ALLOWED_HOSTS",
-        cast=lambda hosts: hosts.split(','),
-        default="http://0.0.0.0:8000, http://localhost:8000"
-    )
+    # CORS_ALLOW_ALL_ORIGINS = False
+    # CORS_ALLOWED_ORIGINS = config(
+    #     "ALLOWED_HOSTS",
+    #     cast=lambda hosts: hosts.split(','),
+    #     default="http://0.0.0.0:8000, http://localhost:8000"
+    # )
 
 
 MEDIA_URL = 'media/'
@@ -258,7 +258,7 @@ JAZZMIN_UI_TWEAKS = {
     "sidebar_nav_compact_style": False,
     "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": False,
-    "theme": "cyborg",
+    "theme": "cerulean",
     "dark_mode_theme": "darkly",
     "button_classes": {
         "primary": "btn-primary",
@@ -271,3 +271,12 @@ JAZZMIN_UI_TWEAKS = {
     "actions_sticky_top": False
 }
 
+# Celery
+
+CELERY_BROKER_URL = 'redis://localhost:6379/15'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/15'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Tehran'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
