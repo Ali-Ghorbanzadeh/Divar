@@ -26,3 +26,4 @@ class LogicalManager(Manager):
 
     def archive(self):
         return self.get_queryset_object()
+
