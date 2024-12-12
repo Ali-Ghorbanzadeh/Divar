@@ -6,8 +6,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from apps.core.models import TimeStampMixin, LogicalDeleteMixin
 from django.contrib.postgres.fields import ArrayField
-from django.core.cache import cache
+from django.core.cache import caches
+from django.utils.connection import ConnectionProxy
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
+cache = ConnectionProxy(caches, 'advertisements')
 
 class Category(TimeStampMixin, LogicalDeleteMixin):
     title = models.CharField(max_length=255, unique=True)
@@ -23,6 +27,15 @@ class CategoryFields(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='fields')
     field_name = models.CharField(max_length=100)
     require = models.BooleanField(default=True)
+
+    def clean(self, *args, **kwargs):
+        if self.category.childes:
+            raise ValidationError(
+                _("Invalid value: %(value)s, The field group can only belong to the last subgroup"),
+                params={"value": args},
+            )
+
+
 
     def __str__(self):
         return self.field_name
@@ -100,6 +113,16 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
         all_ads = [*premiums, *free_ads.exclude(id__in=premiums.values('id'))]
         cache.set(key=key, value=all_ads, timeout=30)
         return all_ads
+
+    def clean(self, *args, **kwargs):
+        if not all([self.user.first_name, self.user.last_name, self.user.national_code, self.user.phone_number]):
+            raise ValidationError(
+                _("Before registering an ad, you must complete your profile information")
+            )
+        if self.address.cities:
+            raise ValidationError(
+                _("Before registering an ad, you must complete your profile information")
+            )
 
     def __str__(self):
         return self.title

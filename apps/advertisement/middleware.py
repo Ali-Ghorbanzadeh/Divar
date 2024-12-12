@@ -14,18 +14,19 @@ class VisitAdvertisementMiddleware:
         response = self.get_response(request)
         path = request.path
         pattern = r'^/api/advertisement/\d+/$'
+        print(response)
         if search(pattern, path) and (pk := response.data.get('id')):
             advertisement = Ad.objects.get(pk=pk)
-            username = request.user.username
+            email = request.user.email
             ip = self.get_client_ip(request)
-            if (request.user.is_authenticated and (username not in advertisement.viewed_users)) or \
+            if (request.user.is_authenticated and (email not in advertisement.viewed_users)) or \
                 (request.user.is_anonymous and (ip not in advertisement.viewed_users)):
-                if username:
-                    advertisement.viewed_users.append(username)
+                if email:
+                    advertisement.viewed_users.append(email)
                 elif ip:
                     advertisement.viewed_users.append(ip)
                 time = timezone.now()
-                advertisement.max_count_view += 1
+                advertisement.total_count_view += 1
                 advertisement.views.setdefault(f'{time.month}/{time.day}', 0)
                 advertisement.views[f'{time.month}/{time.day}'] += 1
                 advertisement.save()

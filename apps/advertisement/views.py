@@ -1,14 +1,15 @@
 from .serializer import CategorySerializer, ListAdSerializer, CreateUpdateRetrieveDeleteAdSerializer
-from rest_framework.generics import GenericAPIView, ListAPIView, CreateAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveAPIView, DestroyAPIView, UpdateAPIView
-from .models import Category, Ad, Image
+from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView, DestroyAPIView
+from .models import Category, Ad
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import LimitOffsetPagination
+
 
 @method_decorator(cache_page(30), name='get')
 class CategoryAPIView(ListAPIView, RetrieveAPIView):
@@ -51,9 +52,9 @@ class ListAdAPIView(GenericAPIView):
 
 
 class CreateUpdateDeleteRetrieveAdAPIView(RetrieveAPIView, DestroyAPIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Ad.objects.all()
     serializer_class = CreateUpdateRetrieveDeleteAdSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -86,13 +87,22 @@ class CreateUpdateDeleteRetrieveAdAPIView(RetrieveAPIView, DestroyAPIView):
         instance.save(force_update='updated_at')
         super().perform_destroy(instance)
 
+    def get_serializer(self, *args, **kwargs):
+        serializer = super().get_serializer(*args, **kwargs)
+        if not self.request.user.is_authenticated:
+            serializer.fields.pop('phone_number')
+            serializer.fields.pop('connection_type')
+        return serializer
+
+
 
 class SearchAdAPIView(GenericAPIView):
     queryset = Ad.objects.all()
     serializer_class = ListAdSerializer
     pagination_class = LimitOffsetPagination
 
-    def post(self, request, *args, **kwargs):
+
+    def get(self, request, *args, **kwargs):
         text = kwargs.get('text')
         category_title = request.data.get('category_title')
         city = request.data.get('city')
