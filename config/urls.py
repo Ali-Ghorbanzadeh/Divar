@@ -36,7 +36,8 @@ urlpatterns = [
     # مسیر رفرش توکن
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('', include('apps.advertisement.urls')),
-    path('', include('apps.accounts.urls'))
+    path('', include('apps.accounts.urls')),
+    path('', include('apps.payments.urls')),
 ]
 
 if settings.DEBUG:
