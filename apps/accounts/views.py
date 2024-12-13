@@ -2,12 +2,12 @@ from random import randint
 from django.core.cache import caches
 from django.conf import settings
 from rest_framework import status
-from rest_framework.generics import get_object_or_404, UpdateAPIView
+from rest_framework.generics import get_object_or_404, UpdateAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
-from .serializer import UserProfileSerializer
+from .serializer import UserProfileSerializer, UserAdHistorySerializer
 from .tasks import send_verify_code
 from redis import StrictRedis
 from django.core.exceptions import ValidationError
@@ -97,3 +97,8 @@ class UserUpdateAPIView(UpdateAPIView):
         instance = get_object_or_404(UserProfile, id=request.user.id)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+class UserAdHistoryAPIView(RetrieveAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserAdHistorySerializer
+

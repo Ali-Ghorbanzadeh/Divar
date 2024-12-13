@@ -4,7 +4,7 @@ from apps.core.models import TimeStampMixin
 from django.contrib.auth.models import AbstractUser, UserManager
 from apps.advertisement.models import ProvinceOrCity
 from django.utils.translation import gettext_lazy as _
-
+from apps.advertisement.models import Ad
 
 class CustomUserManager(UserManager):
     def _create_user(self, **extra_fields):
@@ -48,6 +48,12 @@ class UserProfile(AbstractUser):
     REQUIRED_FIELDS = []
 
     objects = CustomUserManager()
+
+    @property
+    def ads_history(self):
+        ads = Ad.objects.archive().filter(user=self).values('id', 'title', 'status', 'premium').order_by('-created_at')
+        Ad.objects.all().values()
+        return ads
 
     def __str__(self):
         return self.email

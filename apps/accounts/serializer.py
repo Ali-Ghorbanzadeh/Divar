@@ -1,16 +1,14 @@
 from rest_framework.serializers import ModelSerializer
 from .models import UserProfile
 from apps.advertisement.serializer import ListAdSerializer
-from apps.advertisement.models import ProvinceOrCity
+from apps.advertisement.models import ProvinceOrCity, Ad
 
 
 class UserProfileSerializer(ModelSerializer):
-    ads = ListAdSerializer(many=True, read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ["ads",
-                  "first_name",
+        fields = ["first_name",
                   "last_name",
                   "email",
                   "phone_number",
@@ -32,4 +30,9 @@ class UserProfileSerializer(ModelSerializer):
             'premium': {'required': False, 'read_only': True},
             'location': {'required': False},
         }
-        
+
+class UserAdHistorySerializer(ModelSerializer):
+
+    class Meta:
+        model = UserProfile
+        fields = ['ads_history']

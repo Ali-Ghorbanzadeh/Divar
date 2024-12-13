@@ -16,8 +16,8 @@ class PaymentSerializer(ModelSerializer):
                   'price']
 
         extra_kwargs = {
-            {'status': {'required': False,'read_only': True}},
-            {'price': {'required': False,'read_only': True}},
+            'status': {'required': False,'read_only': True},
+            'price': {'required': False,'read_only': True},
         }
 
     def create(self, validated_data):
