@@ -17,7 +17,7 @@ class VisitAdvertisementMiddleware:
         print(response)
         if search(pattern, path) and (pk := response.data.get('id')):
             advertisement = Ad.objects.get(pk=pk)
-            email = request.user.email
+            email = request.user.email if request.user.is_authenticated else None
             ip = self.get_client_ip(request)
             if (request.user.is_authenticated and (email not in advertisement.viewed_users)) or \
                 (request.user.is_anonymous and (ip not in advertisement.viewed_users)):

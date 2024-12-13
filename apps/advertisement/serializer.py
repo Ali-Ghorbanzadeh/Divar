@@ -1,6 +1,7 @@
 from rest_framework.serializers import ModelSerializer, SlugRelatedField
 from .models import Category, Ad, Image, CategoryFields, Video
 from django.contrib.contenttypes.models import ContentType
+from apps.payments.models import Flags
 
 
 class ImageSerializer(ModelSerializer):
@@ -77,6 +78,7 @@ class CreateUpdateRetrieveDeleteAdSerializer(ModelSerializer):
             'videos': {'required': False, 'read_only': True},
             'status': {'required': False, 'read_only': True},
             'total_count_view': {'required': False, 'read_only': True},
+            'payments': {'required': False, 'read_only': True},
         }
 
     def create(self, validated_data):
@@ -85,6 +87,11 @@ class CreateUpdateRetrieveDeleteAdSerializer(ModelSerializer):
         assert len(videos_data) < 3, 'تعداد ویدئوها بیش از حد مجاز است. حداکثر 2 ویدئو مجاز است.'
         assert len(images_data) + len(videos_data) < 6, 'حداکثر تعداد فایل ارسالی مجاز 5 عدد است.'
         instance = super().create(validated_data)
+        if instance.category.premium:
+            instance.status = 'need_to_pay'
+            flag = Flags.objects.get_or_create(name=instance.category.name, price=instance.category.price)[0]
+            instance.payments.create(flag=flag)
+            instance.save()
         object_id = instance.id
         content = ContentType.objects.get(model='ad')
         images = [Image(content_type=content, object_id=object_id, src=image_data) for image_data in images_data]

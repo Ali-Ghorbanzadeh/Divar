@@ -17,7 +17,14 @@ class Category(TimeStampMixin, LogicalDeleteMixin):
     title = models.CharField(max_length=255, unique=True)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='childes', null=True, blank=True)
     premium = models.BooleanField(default=False)
+    price = models.IntegerField(default=0)
     images = GenericRelation('Image')
+
+    def clean(self, *args, **kwargs):
+        if not self.premium and self.price:
+            raise ValidationError(
+                _('You cannot set a price for this category (to set the price, you must activate the premium field)')
+            )
 
     def __str__(self):
         return self.title
@@ -31,8 +38,7 @@ class CategoryFields(models.Model):
     def clean(self, *args, **kwargs):
         if self.category.childes:
             raise ValidationError(
-                _("Invalid value: %(value)s, The field group can only belong to the last subgroup"),
-                params={"value": args},
+                _("The field group can only belong to the last subgroup")
             )
 
 
@@ -60,6 +66,7 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
         ('pending', 'Pending'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
+        ('need_to_pay', 'Need_To_Pay'),
     ]
 
     user = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ads')
@@ -123,6 +130,16 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
             raise ValidationError(
                 _("Before registering an ad, you must complete your profile information")
             )
+        if self.premium and self.payments.status == 'Pending':
+            raise ValidationError(
+                _("You cannot premium your ad without payment")
+            )
+        for field in self.details:
+            if field not in self.category.fields.values('field_name'):
+                raise ValidationError(
+                    _("Invalid field %(value)s: This field is not assigned for this category"),
+                    params={"value": field},
+                )
 
     def __str__(self):
         return self.title
