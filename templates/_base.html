@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        {% include 'layout/head.html' %}
+        <title>{% block title %}Divar{% endblock %}</title>
+    </head>
+    <body>
+        {% block header %}
+            {% include 'layout/header.html' %}
+        {% endblock %}
+        {% csrf_token %}
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        {% include 'layout/footer.html' %}
+
+        {% block extra_body %}{% endblock %}
+    </body>
+</html>
