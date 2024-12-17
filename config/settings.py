@@ -11,12 +11,12 @@ SECRET_KEY = config("SECRET_KEY", default="&(dj-development-secret_key)$")
 DEBUG = config("DEBUG", cast=bool, default=True)
 
 ALLOWED_HOSTS = ["*"] if DEBUG else config("ALLOWED_HOSTS", cast=lambda hosts: hosts.split(','))
-APPLICATIONS = ['core', 'advertisement', 'accounts', 'payments']
+APPLICATIONS = ['core', 'advertisement', 'accounts', 'payments', 'chat']
 DEFAULT_FROM_EMAIL = config("EMAIL_DEFAULT_FROM", default="noreply@development.dev")
 INSTALLED_APPS = [
 
     'jazzmin',
-
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -95,6 +95,17 @@ USE_TZ = False
 STATIC_URL = 'static/'
 STATIC_ROOT_PATH = BASE_DIR / "storage/static"
 
+
+ASGI_APPLICATION = "config.asgi.application"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
 if DEBUG:
     # Static
     STATICFILES_DIRS = [
@@ -133,6 +144,10 @@ if DEBUG:
         "advertisements" : {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": "redis://localhost:6379/2"
+        },
+        "chat" : {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://localhost:6379/3"
         }
     }
 
@@ -317,8 +332,8 @@ else:
 
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5000),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=100),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": False,

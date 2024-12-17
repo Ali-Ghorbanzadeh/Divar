@@ -14,7 +14,6 @@ class TokenRefreshMiddleware:
 
     def __call__(self, request):
         token = request.headers.get('Authorization')
-        print(token)
         if token:
             token = token.replace('Bearer ', '')
             try:

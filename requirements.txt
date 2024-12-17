@@ -10,3 +10,4 @@ python-decouple
 celery
 django_celery_beat
 djangorestframework-simplejwt
+channels_redis

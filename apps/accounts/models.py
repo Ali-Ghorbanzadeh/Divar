@@ -1,10 +1,11 @@
 from django.contrib.auth.hashers import make_password
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from apps.core.models import TimeStampMixin
 from django.contrib.auth.models import AbstractUser, UserManager
 from apps.advertisement.models import ProvinceOrCity
 from django.utils.translation import gettext_lazy as _
-from apps.advertisement.models import Ad
+from apps.advertisement.models import Ad, Image
 
 class CustomUserManager(UserManager):
     def _create_user(self, **extra_fields):
@@ -51,9 +52,17 @@ class UserProfile(AbstractUser):
 
     @property
     def ads_history(self):
-        ads = Ad.objects.archive().filter(user=self).values('id', 'title', 'status', 'premium').order_by('-created_at')
-        Ad.objects.all().values()
-        return ads
+        ads = Ad.objects.archive().filter(user=self).order_by('-created_at')
+        result = []
+        for ad in ads:
+            result.append(
+                {'id': ad.id,
+                 'title': ad.title,
+                 'premium': ad.premium,
+                 'status': ad.status,
+                 'images': [image.src.url for image in ad.images.all()],}
+            )
+        return result
 
     def __str__(self):
         return self.email
@@ -62,9 +71,10 @@ class UserProfile(AbstractUser):
 class VerifyUser(TimeStampMixin):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='verify')
     status = models.BooleanField(default=False)
+    images = GenericRelation(Image)
 
     def __str__(self):
-        return self.user.username
+        return self.user.email
 
 
 # class Notifications(TimeStampMixin):

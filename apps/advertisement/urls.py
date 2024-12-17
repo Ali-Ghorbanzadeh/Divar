@@ -10,7 +10,7 @@ urlpatterns = [
     path('api/advertisement/<int:pk>/', CreateUpdateDeleteRetrieveAdAPIView.as_view(), name='show-advertisement'),
     path('api/home/advertisement/', ListAdAPIView.as_view(), name='show-all-advertisements'),
     path('api/advertisement/filter/category/<str:title>/', ListAdAPIView.as_view(), name='show-advertisement-by-category'),
-    path('api/advertisement/filter/province/<str:city>/', ListAdAPIView.as_view(), name='show-advertisement-by-category'),
-    path('api/advertisement/filter/<str:title>/<str:city>/', ListAdAPIView.as_view(), name='show-advertisement-by-category'),
+    path('api/advertisement/filter/province/<str:city>/', ListAdAPIView.as_view(), name='show-advertisement-by-province'),
+    path('api/advertisement/filter/<str:title>/<str:city>/', ListAdAPIView.as_view(), name='show-advertisement-by-category-and-province'),
     path('api/advertisement/search/<str:text>/', SearchAdAPIView.as_view(), name='search-advertisement'),
 ]

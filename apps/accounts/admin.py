@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.admin import UserAdmin
-from .models import UserProfile
+from .models import UserProfile, VerifyUser
 
 
 class CustomUserAdmin(UserAdmin):
@@ -27,3 +27,4 @@ class CustomUserAdmin(UserAdmin):
 
 
 admin.site.register(UserProfile, CustomUserAdmin)
+admin.site.register(VerifyUser)

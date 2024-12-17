@@ -1,7 +1,7 @@
 from django.db import models
 from datetime import timedelta
 from django.utils import timezone
-from config.settings import AUTH_USER_MODEL
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from apps.core.models import TimeStampMixin, LogicalDeleteMixin
@@ -10,8 +10,10 @@ from django.core.cache import caches
 from django.utils.connection import ConnectionProxy
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from redis import StrictRedis
 
 cache = ConnectionProxy(caches, 'advertisements')
+redis_client = StrictRedis.from_url(settings.CACHES['advertisements']['LOCATION'])
 
 class Category(TimeStampMixin, LogicalDeleteMixin):
     title = models.CharField(max_length=255, unique=True)
@@ -42,7 +44,6 @@ class CategoryFields(models.Model):
             )
 
 
-
     def __str__(self):
         return self.field_name
 
@@ -69,7 +70,7 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
         ('need_to_pay', 'Need_To_Pay'),
     ]
 
-    user = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ads')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ads')
     title = models.CharField(max_length=255, unique=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='advertisement')
     description = models.TextField(max_length=3000, null=True, blank=True)
@@ -83,6 +84,7 @@ class Ad(TimeStampMixin, LogicalDeleteMixin):
     status = models.CharField(choices=STATUS_CHOICES, default='pending')
     viewed_users = ArrayField(models.CharField(max_length=255), default=list)
     images = GenericRelation('Image')
+
 
     @property
     def time_to_add(self):

@@ -21,12 +21,12 @@ class PaymentSerializer(ModelSerializer):
         }
 
     def create(self, validated_data):
-        flag = Flags.objects.filter(name=validated_data.data.get('flag'))
-        assert flag.exists(), 'Flag does not exist'
+        flag = validated_data.get('flag')
+        assert flag, 'Flag does not exist'
 
-        advertise = Ad.objects.filter(id=validated_data.data.get('advertise'))
-        assert advertise.exists(), 'Advertise does not exist'
-        instance = Payment.objects.get_or_create(advertise=advertise[0], flag=flag[0])
+        advertise = validated_data.get('advertise')
+        assert advertise, 'Advertise does not exist'
+        instance = Payment.objects.get_or_create(advertise=advertise, flag=flag)
         return instance
 
     def update(self, instance, validated_data):
@@ -35,5 +35,5 @@ class PaymentSerializer(ModelSerializer):
         # instance.status = new_status
         # instance.save()
 
-        instance.status = validated_data.get('status', instance.status)
+        instance.status = 'confirmed'
         return instance

@@ -38,6 +38,7 @@ urlpatterns = [
     path('', include('apps.advertisement.urls')),
     path('', include('apps.accounts.urls')),
     path('', include('apps.payments.urls')),
+    path('', include('apps.chat.urls')),
 ]
 
 if settings.DEBUG:

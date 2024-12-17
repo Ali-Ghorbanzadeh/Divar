@@ -2,26 +2,28 @@ from random import randint
 from django.core.cache import caches
 from django.conf import settings
 from rest_framework import status
-from rest_framework.generics import get_object_or_404, UpdateAPIView, RetrieveAPIView
+from rest_framework.generics import get_object_or_404, UpdateAPIView, RetrieveAPIView, GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
-from .serializer import UserProfileSerializer, UserAdHistorySerializer
+from .serializer import UserProfileSerializer, UserAdHistorySerializer, UserVerificationSerializer
 from .tasks import send_verify_code
 from redis import StrictRedis
 from django.core.exceptions import ValidationError
 from .models import UserProfile
 from rest_framework.views import APIView
 from django.utils.connection import ConnectionProxy
+from apps.core.utils.permissions import IsNotAuthenticated
 
 cache = ConnectionProxy(caches, "accounts")
 redis_client = StrictRedis.from_url(settings.CACHES['accounts']['LOCATION'])
 
 
 class LoginAndVerifyAPIView(APIView):
-    renderer_classes = [TemplateHTMLRenderer]
-    template_name = 'account/login.html'
+    # renderer_classes = [TemplateHTMLRenderer]
+    # permission_classes = [IsNotAuthenticated]
+    # template_name = 'account/login.html'
 
     @staticmethod
     def code_generator():
@@ -68,7 +70,7 @@ class LoginAndVerifyAPIView(APIView):
         return Response(status=status.HTTP_200_OK)
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         refresh_token = request.data.get("refresh_token")
@@ -88,17 +90,43 @@ class LogoutView(APIView):
 
 class UserUpdateAPIView(UpdateAPIView):
     queryset = UserProfile.objects.all()
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     serializer_class = UserProfileSerializer
-    renderer_classes = [TemplateHTMLRenderer]
-    template_name = 'account/profile.html'
+    # renderer_classes = [TemplateHTMLRenderer]
+    # template_name = 'account/profile.html'
 
     def get(self, request, *args, **kwargs):
         instance = get_object_or_404(UserProfile, id=request.user.id)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+    def get_object(self):
+        obj = get_object_or_404(self.queryset, id=self.request.user.id)
+        return obj
+
 class UserAdHistoryAPIView(RetrieveAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserAdHistorySerializer
+
+    def get_object(self):
+        obj = get_object_or_404(self.queryset, id=self.request.user.id)
+        return obj
+
+
+class UserVerifyAPIView(GenericAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserVerificationSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response({'message': 'سیستم درحال ثبت آگهی میباشد. لطفا صبور باشید'}, status=status.HTTP_201_CREATED)
+        except ValidationError:
+            return Response({'message': 'درخواست نامعتبر!'},status=status.HTTP_400_BAD_REQUEST)
+
+        except AssertionError as e:
+            return Response({'message': e}, status=status.HTTP_400_BAD_REQUEST)
 
