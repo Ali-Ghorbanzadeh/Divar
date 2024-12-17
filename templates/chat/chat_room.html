@@ -1,0 +1,102 @@
+{% extends '_base.html' %}
+{% block title %}{{ block.super }} | Chat Room{% endblock %}
+{% block content %}
+    <div x-data="chat" x-init="initChat">
+        <h1>Chat Room</h1>
+        <div>
+            <button @click="changeChatRoom('S1l357OaNki0ba0qwGNRKkq')">Room 1</button>
+            <button @click="changeChatRoom('Room2')">Room 2</button>
+            <button @click="changeChatRoom('Room3')">Room 3</button>
+        </div>
+        <div>
+            <template x-for="message in messages" :key="message.sender + message.text">
+                <div>
+                    <span 
+                        x-text="`${message.sender}: ${message.text}`"
+                        :class="{
+                            'text-red-500': message.sender === 'ali',
+                            'text-blue-500': message.sender === 'reza'
+                        }"
+                    ></span>
+                </div>
+            </template>
+        </div>
+        <form @submit.prevent="sendMessage">
+            <input type="text" x-model="newMessage" placeholder="Type your message...">
+            <button type="submit">Send</button>
+        </form>
+    </div>
+{% endblock %}
+{% block extra_body %}
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('chat', () => ({
+                messages: [],
+                newMessage: '',
+                user: '{{ request.user }}',
+                roomName:  window.location.pathname.split('/')[2] || null,
+                chatSocket: null,
+                
+                initChat() {
+                    if (this.roomName) {
+                        this.addMessages(this.roomName)
+                        this.initWebSocket(this.roomName)    
+                    }
+                },
+                
+                addMessages (newRoomName) {
+                    fetch(`/chat/${newRoomName}/`)
+                    .then(async res => {
+                        const data = await res.json()
+                        if (res.ok) {
+                            this.messages = Object.keys(data['messages']).map(sender => {
+                                return { sender: sender, text: data['messages'][sender] }
+                            })
+                        }
+                    })
+                },
+                
+                initWebSocket(newRoomName) {
+                    if (this.chatSocket) {
+                        this.chatSocket.close()
+                    }
+                    
+                    const roomName = `${newRoomName}`
+                    this.chatSocket = new WebSocket(
+                        'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
+                    )
+                    this.chatSocket.onmessage = (e) => {
+                        const data = JSON.parse(e.data)
+                        this.messages.push({
+                            sender: this.user,
+                            text: data.message.trim()
+                        })
+                    }
+            
+                    this.chatSocket.onclose = () => {
+                        console.log('Chat socket closed')
+                    }
+                },
+                changeChatRoom(newRoomName) {
+                    if (window.location.pathname !== `/chat/${newRoomName}/`) {
+                        history.pushState(null, '', `/chat/${newRoomName}/`)
+                        this.messages = []
+                        this.addMessages(newRoomName)
+                        this.initWebSocket(newRoomName)
+                    }
+                },
+                
+                sendMessage() {
+                if (this.newMessage.trim() !== '') {
+                    this.chatSocket.send(JSON.stringify({
+                        room_name: this.roomName,
+                        sender: this.user,
+                        message: this.newMessage.trim(),
+                    }))
+                    this.newMessage = ''
+                }
+            }
+            }))
+        })
+    </script>
+{% endblock %}
