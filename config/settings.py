@@ -144,10 +144,6 @@ if DEBUG:
         "advertisements" : {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": "redis://localhost:6379/2"
-        },
-        "chat" : {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": "redis://localhost:6379/3"
         }
     }
 

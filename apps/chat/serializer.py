@@ -8,8 +8,7 @@ class ChatSerializer(ModelSerializer):
         model = Chat
         fields = ['id',
                   'advertise',
-                  'owner',
-                  'customer',
+                  'room_name',
                   'messages']
         extra_kwargs = {
             'messages': {'required': False, 'read_only': True},

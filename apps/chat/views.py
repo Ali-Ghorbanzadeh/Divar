@@ -2,7 +2,7 @@ import string
 from django.shortcuts import redirect
 from django.http import JsonResponse
 from rest_framework import status
-from rest_framework.generics import RetrieveAPIView, get_object_or_404
+from rest_framework.generics import RetrieveAPIView, get_object_or_404, GenericAPIView
 from rest_framework.views import APIView
 from .models import Chat
 from .serializer import ChatSerializer
@@ -49,3 +49,15 @@ class CreateRetrieveChatAPIView(RetrieveAPIView):
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+class ChatListAPIView(GenericAPIView):
+    queryset = Chat.objects.all()
+    serializer_class = ChatSerializer
+
+    def get(self, request, *args, **kwargs):
+        user = request.user.id
+        owner_chats = Chat.objects.filter(owner=4)
+        customer_chats = Chat.objects.filter(customer=4)
+        all_chats = owner_chats.union(customer_chats)
+        serializer = self.get_serializer(instance=all_chats, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
